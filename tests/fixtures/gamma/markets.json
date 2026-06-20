@@ -1,0 +1,5 @@
+[
+  {"id": "m0", "question": "Will Team A win?", "clobTokenIds": ["111", "222"], "tickSize": "0.01", "active": true, "closed": false},
+  {"id": "m1", "question": "Will Team B win?", "clobTokenIds": ["333", "444"], "tickSize": "0.01", "active": true, "closed": false},
+  {"id": "m2", "question": "Will the match draw?", "clobTokenIds": ["555", "666"], "tickSize": "0.01", "active": true, "closed": false}
+]
