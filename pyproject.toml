@@ -1,0 +1,49 @@
+[project]
+name = "fifabot"
+version = "0.0.0"
+description = "Automated trading research for Polymarket soccer markets"
+requires-python = ">=3.12"
+license = "MIT"
+dependencies = [
+    "pydantic>=2",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8",
+    "pytest-cov>=5",
+    "hypothesis>=6",
+    "ruff>=0.6",
+    "mypy>=1.11",
+    "pre-commit>=3.8",
+]
+
+[tool.uv]
+package = false
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+addopts = "--import-mode=importlib --cov"
+
+[tool.coverage.run]
+source = ["core", "data", "backtest", "llm", "execution", "app"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 88
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["core", "data", "backtest", "llm", "execution", "app"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+plugins = ["pydantic.mypy"]
+files = ["core", "data", "backtest", "llm", "execution", "app", "tests"]
+mypy_path = "."
+explicit_package_bases = true
+namespace_packages = true
