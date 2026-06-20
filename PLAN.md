@@ -110,7 +110,7 @@ walk-forward — are the real scorecard, not the live P&L.
 ## Status
 
 - [x] Phase 0 — Foundation
-- [ ] Phase 1 — Domain core
+- [x] Phase 1 — Domain core
 - [ ] Phase 2 — Data & backtest
 - [ ] Phase 3 — Signals
 - [ ] Phase 4 — Assembly & paper trading
