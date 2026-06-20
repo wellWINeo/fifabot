@@ -6,6 +6,8 @@ requires-python = ">=3.12"
 license = "MIT"
 dependencies = [
     "pydantic>=2",
+    "numpy>=2",
+    "scikit-learn>=1.5",
 ]
 
 [dependency-groups]
@@ -47,3 +49,7 @@ files = ["core", "data", "backtest", "llm", "execution", "app", "tests"]
 mypy_path = "."
 explicit_package_bases = true
 namespace_packages = true
+
+[[tool.mypy.overrides]]
+module = ["sklearn.*"]
+ignore_missing_imports = true
