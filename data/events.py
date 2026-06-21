@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from decimal import Decimal
 
-from pydantic import AwareDatetime, BaseModel, ConfigDict, Field
+from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, field_validator
 
 
 class Market(BaseModel):
@@ -43,3 +43,20 @@ class MarketEvent(BaseModel):
 
 def event_from_quote(quote: Quote) -> MarketEvent:
     return MarketEvent(ts=quote.ts, market_id=quote.market_id, quote=quote)
+
+
+class MarketGroup(BaseModel):
+    """A set of mutually-exclusive YES legs (one Gamma negRisk event)."""
+
+    model_config = ConfigDict(frozen=True)
+
+    group_id: str
+    market_ids: tuple[str, ...]
+    kind: str = "negrisk"
+
+    @field_validator("market_ids")
+    @classmethod
+    def _at_least_two_legs(cls, value: tuple[str, ...]) -> tuple[str, ...]:
+        if len(value) < 2:
+            raise ValueError("a market group needs at least two legs")
+        return value

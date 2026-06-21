@@ -6,7 +6,7 @@ from decimal import Decimal
 import pytest
 from pydantic import ValidationError
 
-from data.events import Quote, event_from_quote
+from data.events import MarketGroup, Quote, event_from_quote
 
 
 def _quote() -> Quote:
@@ -43,3 +43,14 @@ def test_models_are_frozen() -> None:
     q = _quote()
     with pytest.raises(ValidationError):
         q.price = Decimal("0.5")  # type: ignore[misc]
+
+
+def test_market_group_construction() -> None:
+    group = MarketGroup(group_id="30615", market_ids=("558934", "558935"))
+    assert group.market_ids == ("558934", "558935")
+    assert group.kind == "negrisk"
+
+
+def test_market_group_requires_two_legs() -> None:
+    with pytest.raises(ValidationError):
+        MarketGroup(group_id="g", market_ids=("only-one",))

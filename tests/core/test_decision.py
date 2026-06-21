@@ -3,6 +3,8 @@
 from collections.abc import Sequence
 from decimal import Decimal
 
+import pytest
+
 from core.decision import evaluate
 from core.models import CalibrationSample, CostInputs, RiskLimits, Side, TradeCandidate
 
@@ -58,3 +60,8 @@ def test_acts_above_hurdle_with_capped_nonzero_size() -> None:
     assert decision.gate.side is Side.BUY_YES
     assert decision.sizing.stake_usd > Decimal("0")
     assert decision.sizing.stake_usd <= Decimal("5")  # max_position_usd cap
+
+
+def test_evaluate_records_calibrated_probability() -> None:
+    decision = evaluate(_candidate("0.01"), _FixedCalibrator(0.70), _limits())
+    assert decision.prob == pytest.approx(0.70)

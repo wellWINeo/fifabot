@@ -30,6 +30,13 @@ def test_latest_price() -> None:
     assert _view(3).latest_price("m1") == Decimal("0.44")
 
 
+def test_latest_price_ignores_quotes_after_as_of() -> None:
+    as_of = datetime(2024, 6, 1, 0, 2, tzinfo=UTC)
+    quotes = {"m1": [_q(1, "0.40"), _q(3, "0.44")]}
+    view = MarketView(as_of=as_of, quotes_by_market=quotes)
+    assert view.latest_price("m1") == Decimal("0.40")
+
+
 def test_price_at_returns_as_of_or_before() -> None:
     view = _view(3)
     ts = datetime(2024, 6, 1, 0, 2, tzinfo=UTC)

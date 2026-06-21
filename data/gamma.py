@@ -9,9 +9,9 @@ from typing import Self
 
 import httpx
 
-from data.events import Market, Quote
+from data.events import Market, MarketGroup, Quote
 from data.http import RateLimiter, get_json
-from data.payloads import GammaMarket, GammaPriceHistory
+from data.payloads import GammaEvent, GammaMarket, GammaPriceHistory
 
 GAMMA_BASE_URL = "https://gamma-api.polymarket.com"
 
@@ -93,3 +93,18 @@ class GammaClient:
             retry_backoff=self._retry_backoff,
         )
         return parse_price_history(market_id, GammaPriceHistory.model_validate(raw))
+
+
+def parse_event_groups(raw: GammaEvent) -> list[MarketGroup]:
+    """Turn a Gamma event into mutually-exclusive MarketGroups.
+
+    Only negRisk events describe a set of mutually-exclusive YES legs whose
+    prices should sum to ~1.0 -- S2's target. Non-negRisk events and events with
+    fewer than two markets yield nothing.
+    """
+    if not (raw.enableNegRisk or raw.negRisk):
+        return []
+    market_ids = tuple(market.id for market in raw.markets)
+    if len(market_ids) < 2:
+        return []
+    return [MarketGroup(group_id=raw.id, market_ids=market_ids, kind="negrisk")]

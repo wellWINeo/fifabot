@@ -20,4 +20,4 @@ def evaluate(
     hurdle = round_trip_cost(candidate.costs, candidate.notional_hint)
     gate = decide(candidate, q, hurdle)
     sizing = size(candidate, gate, limits)
-    return Decision(gate=gate, sizing=sizing)
+    return Decision(gate=gate, sizing=sizing, prob=q)

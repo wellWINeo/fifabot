@@ -37,8 +37,7 @@ class MarketView:
             raise LookAheadError(f"query ts {ts} is after as_of {self._as_of}")
 
     def latest_price(self, market_id: str) -> Decimal | None:
-        quotes = self._quotes.get(market_id, [])
-        return quotes[-1].price if quotes else None
+        return self.price_at(market_id, self._as_of)
 
     def price_at(self, market_id: str, ts: datetime) -> Decimal | None:
         self._guard(ts)

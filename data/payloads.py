@@ -62,3 +62,22 @@ class ClobPriceHistory(BaseModel):
     model_config = ConfigDict(frozen=True, extra="ignore")
 
     history: list[ClobPricePoint]
+
+
+class GammaEventMarket(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="ignore")
+
+    id: str
+    question: str
+    groupItemTitle: str = ""  # noqa: N815
+
+
+class GammaEvent(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="ignore")
+
+    id: str
+    slug: str = ""
+    title: str = ""
+    negRisk: bool = False  # noqa: N815
+    enableNegRisk: bool = False  # noqa: N815
+    markets: list[GammaEventMarket] = Field(default_factory=list)

@@ -96,6 +96,7 @@ class Decision(BaseModel):
 
     gate: GateResult
     sizing: SizingResult
+    prob: float | None = None
 
 
 class Fill(BaseModel):

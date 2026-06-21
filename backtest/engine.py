@@ -25,6 +25,7 @@ class BacktestResult:
     fills: tuple[Fill, ...]
     realized_pnl: Decimal
     roi: float
+    signal_probs: tuple[tuple[str, float], ...] = ()
 
 
 @dataclass
@@ -50,11 +51,15 @@ def replay(
     open_positions: dict[str, _OpenPosition] = {}
     fills: list[Fill] = []
     deployed = Decimal(0)
+    signal_probs: list[tuple[str, float]] = []
 
     for event in ordered:
         quotes_by_market.setdefault(event.market_id, []).append(event.quote)
         view = MarketView(event.ts, quotes_by_market, reference)
         decision = strategy.on_event(event, view)
+
+        if decision is not None and decision.prob is not None:
+            signal_probs.append((event.market_id, decision.prob))
 
         market = event.market_id
         yes_price = event.quote.price
@@ -105,4 +110,5 @@ def replay(
         fills=tuple(fills),
         realized_pnl=pnl,
         roi=roi(pnl, deployed) if deployed > 0 else 0.0,
+        signal_probs=tuple(signal_probs),
     )

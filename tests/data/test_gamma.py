@@ -8,9 +8,14 @@ from pathlib import Path
 
 import httpx
 
-from data.events import Market, Quote
-from data.gamma import GammaClient, parse_market, parse_price_history
-from data.payloads import GammaMarket, GammaPriceHistory
+from data.events import Market, MarketGroup, Quote
+from data.gamma import (
+    GammaClient,
+    parse_event_groups,
+    parse_market,
+    parse_price_history,
+)
+from data.payloads import GammaEvent, GammaMarket, GammaPriceHistory
 
 _FIX = Path(__file__).parent.parent / "fixtures" / "gamma"
 
@@ -82,3 +87,28 @@ def test_fetch_price_history_returns_quotes() -> None:
         assert quotes[-1].price == Decimal("0.52")
 
     asyncio.run(_run())
+
+
+def _load_events() -> list[GammaEvent]:
+    raw = json.loads((_FIX / "events_negrisk.json").read_text())
+    return [GammaEvent.model_validate(event) for event in raw]
+
+
+def test_parse_event_groups_extracts_negrisk_group() -> None:
+    groups = [g for event in _load_events() for g in parse_event_groups(event)]
+    assert len(groups) == 1
+    assert groups[0] == MarketGroup(
+        group_id="30615",
+        market_ids=("558934", "558935", "558957"),
+        kind="negrisk",
+    )
+
+
+def test_parse_event_groups_skips_non_negrisk() -> None:
+    kraken = next(e for e in _load_events() if e.id == "16183")
+    assert parse_event_groups(kraken) == []
+
+
+def test_parse_event_groups_skips_negrisk_with_single_leg() -> None:
+    lone_leg = next(e for e in _load_events() if e.id == "40021")
+    assert parse_event_groups(lone_leg) == []

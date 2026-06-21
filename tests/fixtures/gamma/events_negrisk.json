@@ -1,0 +1,35 @@
+[
+  {
+    "id": "30615",
+    "slug": "world-cup-winner",
+    "title": "World Cup Winner",
+    "negRisk": true,
+    "enableNegRisk": true,
+    "markets": [
+      {"id": "558934", "question": "Will Spain win the 2026 FIFA World Cup?", "groupItemTitle": "Spain", "outcomes": "[\"Yes\", \"No\"]", "clobTokenIds": "[\"4394\", \"1126\"]"},
+      {"id": "558935", "question": "Will England win the 2026 FIFA World Cup?", "groupItemTitle": "England", "outcomes": "[\"Yes\", \"No\"]", "clobTokenIds": "[\"1155\", \"7712\"]"},
+      {"id": "558957", "question": "Will New Zealand win the 2026 FIFA World Cup?", "groupItemTitle": "New Zealand", "outcomes": "[\"Yes\", \"No\"]", "clobTokenIds": "[\"7960\", \"1930\"]"}
+    ]
+  },
+  {
+    "id": "16183",
+    "slug": "kraken-ipo",
+    "title": "Kraken IPO by ___ ?",
+    "negRisk": false,
+    "enableNegRisk": false,
+    "markets": [
+      {"id": "516950", "question": "Kraken IPO in 2025?", "groupItemTitle": "December 31", "outcomes": "[\"Yes\", \"No\"]", "clobTokenIds": "[\"1062\", \"3300\"]"},
+      {"id": "678876", "question": "Kraken IPO by March 31, 2026?", "groupItemTitle": "March 31, 2026", "outcomes": "[\"Yes\", \"No\"]", "clobTokenIds": "[\"3379\", \"1036\"]"}
+    ]
+  },
+  {
+    "id": "40021",
+    "slug": "lone-leg-negrisk",
+    "title": "Lone Leg NegRisk Event",
+    "negRisk": true,
+    "enableNegRisk": true,
+    "markets": [
+      {"id": "900001", "question": "Will the lone leg resolve Yes?", "groupItemTitle": "Lone Leg", "outcomes": "[\"Yes\", \"No\"]", "clobTokenIds": "[\"5001\", \"5002\"]"}
+    ]
+  }
+]

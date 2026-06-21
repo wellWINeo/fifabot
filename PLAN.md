@@ -60,8 +60,9 @@ vs. reference price (S1); `pydantic-ai` hypothesis generator + feature extractor
 emitting typed output.
 
 **Gate:** each signal flags known synthetic mispricings and abstains within
-noise; LLM output is schema-validated, mocked in tests, and malformed responses
-never crash the loop.
+noise; the LLM output contract is schema-validated. (The `pydantic-ai` agent —
+mocked in tests, with malformed responses never crashing the loop — is built in
+Phase 4.)
 
 ---
 
@@ -71,10 +72,14 @@ never crash the loop.
 orders.
 
 **Deliverables:** strategy wiring (signals → calibration → gate → sizing →
-simulated fills); paper-trading mode over both historical and live data feeds.
+simulated fills); the `pydantic-ai` hypothesis generator + feature extractor
+(the agent behind the Phase 3 output contract); paper-trading mode over both
+historical and live data feeds.
 
 **Gate:** an end-to-end integration scenario (a worked match with a known lag
-event) produces the expected decisions; matches without edge produce ABSTAIN.
+event) produces the expected decisions; matches without edge produce ABSTAIN; the
+LLM agent runs behind a mock, its output is schema-validated, and malformed
+responses never crash the loop.
 
 ---
 
@@ -112,7 +117,7 @@ walk-forward — are the real scorecard, not the live P&L.
 - [x] Phase 0 — Foundation
 - [x] Phase 1 — Domain core
 - [x] Phase 2 — Data & backtest
-- [ ] Phase 3 — Signals
+- [x] Phase 3 — Signals
 - [ ] Phase 4 — Assembly & paper trading
 - [ ] Phase 5 — Execution & risk
 - [ ] Phase 6 — Live
