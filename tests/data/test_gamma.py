@@ -112,3 +112,20 @@ def test_parse_event_groups_skips_non_negrisk() -> None:
 def test_parse_event_groups_skips_negrisk_with_single_leg() -> None:
     lone_leg = next(e for e in _load_events() if e.id == "40021")
     assert parse_event_groups(lone_leg) == []
+
+
+def test_fetch_event_groups_over_mock_transport() -> None:
+    async def _run() -> None:
+        payload = json.loads((_FIX / "events_negrisk.json").read_text())
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            return httpx.Response(200, json=payload)
+
+        async with GammaClient(
+            transport=httpx.MockTransport(handler), base_url="http://t"
+        ) as client:
+            groups = await client.fetch_event_groups(limit=100)
+        assert all(isinstance(g, MarketGroup) for g in groups)
+        assert any(len(g.market_ids) >= 2 for g in groups)
+
+    asyncio.run(_run())

@@ -1,6 +1,6 @@
 """Thin per-split aggregation of backtest results into a walk-forward report.
 
-Reporting only — no new financial logic. Brier aggregation arrives once signals
+Reporting only -- no new financial logic. Brier aggregation arrives once signals
 emit probabilities (Phase 3).
 """
 
@@ -11,6 +11,7 @@ from dataclasses import dataclass
 from decimal import Decimal
 
 from backtest.engine import BacktestResult
+from backtest.signals import SignalDecision
 from core.metrics import brier_score, calibration_curve
 from core.models import CalibrationSample
 
@@ -62,3 +63,28 @@ def score_signals(
     return SignalScore(
         brier=brier_score(probs, obs), curve=calibration_curve(probs, obs, bins)
     )
+
+
+def per_signal_scores(
+    log: Sequence[SignalDecision],
+    outcomes: Mapping[str, int],
+    *,
+    bins: int = 10,
+) -> dict[str, SignalScore]:
+    by_source: dict[str, list[tuple[str, float]]] = {}
+    for rec in log:
+        if rec.p_fair is None:
+            continue
+        by_source.setdefault(rec.source, []).append((rec.market_id, rec.p_fair))
+    scores: dict[str, SignalScore] = {}
+    for source, probs in by_source.items():
+        samples = calibration_samples(probs, outcomes)
+        if samples:
+            scores[source] = score_signals(samples, bins=bins)
+    return scores
+
+
+def agreement_rate(log: Sequence[SignalDecision]) -> float:
+    if not log:
+        return 0.0
+    return sum(1 for rec in log if rec.agreement) / len(log)

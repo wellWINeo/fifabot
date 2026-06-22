@@ -6,6 +6,7 @@ These are parsed into canonical records in data/gamma.py and data/clob.py.
 
 from __future__ import annotations
 
+from datetime import datetime
 from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -81,3 +82,18 @@ class GammaEvent(BaseModel):
     negRisk: bool = False  # noqa: N815
     enableNegRisk: bool = False  # noqa: N815
     markets: list[GammaEventMarket] = Field(default_factory=list)
+
+
+class OddsApiBookmakerMarket(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="ignore")
+
+    name: str
+    odds: list[dict[str, str]]
+
+
+class OddsApiOdds(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="ignore")
+
+    eventId: str  # noqa: N815
+    updatedAt: datetime  # noqa: N815
+    bookmakers: dict[str, list[OddsApiBookmakerMarket]] = {}

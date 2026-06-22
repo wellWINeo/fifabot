@@ -1,6 +1,7 @@
 """Walk-forward report: per-split aggregation of P&L and ROI."""
 
 from collections.abc import Mapping
+from datetime import UTC, datetime
 from decimal import Decimal
 
 import pytest
@@ -10,9 +11,12 @@ from backtest.report import (
     SignalScore,
     WalkForwardReport,
     aggregate,
+    agreement_rate,
     calibration_samples,
+    per_signal_scores,
     score_signals,
 )
+from backtest.signals import SignalDecision
 from core.models import CalibrationSample
 
 
@@ -58,3 +62,44 @@ def test_score_signals_perfect_predictions_zero_brier() -> None:
 def test_score_signals_overconfident_wrong_high_brier() -> None:
     samples = [CalibrationSample(raw_prob=1.0, outcome=0)]
     assert score_signals(samples, bins=2).brier == 1.0
+
+
+_T = datetime(2026, 6, 21, 12, 0, tzinfo=UTC)
+
+
+def _rec(source: str, mid: str, prob: float, agree: bool = False) -> SignalDecision:
+    return SignalDecision(
+        source=source,
+        market_id=mid,
+        ts=_T,
+        action="abstain",
+        side=None,
+        p_fair=prob,
+        promoted=source != "S3",
+        agreement=agree,
+    )
+
+
+def test_per_signal_scores_groups_by_source() -> None:
+    log = [
+        _rec("S1", "a", 1.0),
+        _rec("S1", "b", 0.0),
+        _rec("S3", "a", 0.0),
+        _rec("S3", "b", 1.0),
+    ]
+    outcomes = {"a": 1, "b": 0}
+    scores = per_signal_scores(log, outcomes, bins=2)
+    assert set(scores) == {"S1", "S3"}
+    assert scores["S1"].brier == 0.0  # perfect
+    assert scores["S3"].brier == 1.0  # perfectly wrong
+
+
+def test_per_signal_scores_skips_sources_without_labeled_outcomes() -> None:
+    log = [_rec("S1", "z", 0.5)]
+    assert per_signal_scores(log, {}, bins=2) == {}
+
+
+def test_agreement_rate() -> None:
+    log = [_rec("S1", "a", 0.5, agree=True), _rec("S2", "a", 0.5, agree=False)]
+    assert agreement_rate(log) == 0.5
+    assert agreement_rate([]) == 0.0

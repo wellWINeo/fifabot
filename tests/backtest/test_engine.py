@@ -53,12 +53,32 @@ class _BuyBelowHalf:
         return None
 
 
-def test_replay_open_then_close_pnl() -> None:
-    # Buy 10 YES at 0.40 (event 1), close at 0.55 (event 2). pnl = 10*(0.55-0.40).
-    result = replay([_event(1, "0.40"), _event(2, "0.55")], _BuyBelowHalf(), _limits())
+def test_replay_maker_fills_then_closes_pnl() -> None:
+    # Order rests at 0.40 (event 1). Event 2 dips to 0.38 -> crosses -> fill at 0.40.
+    # Once filled, the market is "open", so no new order rests; event 3 at 0.55
+    # closes the position. pnl = 10*(0.55-0.40) - costs(0) = 1.50.
+    result = replay(
+        [_event(1, "0.40"), _event(2, "0.38"), _event(3, "0.55")],
+        _BuyBelowHalf(),
+        _limits(),
+    )
     assert isinstance(result, BacktestResult)
-    assert result.realized_pnl == Decimal("1.50")
     assert len(result.fills) == 1
+    fill = result.fills[0]
+    assert fill.entry_price == Decimal("0.40")
+    assert fill.exit_price == Decimal("0.55")
+    assert result.realized_pnl == Decimal("1.50")
+
+
+def test_replay_order_expires_unfilled_when_price_never_crosses() -> None:
+    # Rests at 0.40; price only rises -> never crosses -> no fill, no position.
+    result = replay(
+        [_event(1, "0.40"), _event(2, "0.55"), _event(3, "0.60")],
+        _BuyBelowHalf(),
+        _limits(),
+    )
+    assert result.fills == ()
+    assert result.realized_pnl == Decimal("0")
 
 
 def test_replay_is_deterministic() -> None:

@@ -1,25 +1,23 @@
-"""Deterministic replay engine with a maker-first fill model.
+"""Thin async paper-trading loop. Zero real orders -- fills are simulated.
 
-An ACT decision rests a limit order; the position opens only when a later
-in-window quote trades through the limit, and closes on the next quote for that
-market. No wall-clock, no RNG. The fill simulator reads forward quotes directly
-(not via MarketView) -- forward simulation of a resting order, not look-ahead.
+Consumes a Feed, builds the as-of MarketView per event, runs the strategy, and
+applies the same maker-first fill lifecycle as the backtest engine via
+core.fills. Historical feed -> deterministic; live feed -> human-run smoke test.
 """
 
 from __future__ import annotations
 
-from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from decimal import Decimal
 
-from backtest.feed import load_events
+from app.feed import Feed
 from backtest.strategy import Strategy
 from backtest.view import MarketView
 from core.fills import MakerOrder, crosses, round_trip_fill_costs, token_price
-from core.metrics import realized_pnl, roi
+from core.metrics import realized_pnl
 from core.models import CostInputs, Fill, RiskLimits, Side
-from data.events import MarketEvent, Quote
+from data.events import Quote
 from data.reference import ReferencePrice
 
 _ZERO_COSTS = CostInputs(
@@ -31,11 +29,9 @@ _ZERO_COSTS = CostInputs(
 
 
 @dataclass(frozen=True)
-class BacktestResult:
+class PaperResult:
     fills: tuple[Fill, ...]
     realized_pnl: Decimal
-    roi: float
-    signal_probs: tuple[tuple[str, float], ...] = ()
 
 
 @dataclass
@@ -46,34 +42,28 @@ class _OpenPosition:
     opened_ts: datetime
 
 
-def replay(
-    events: Iterable[MarketEvent],
+async def run_paper(
+    feed: Feed,
     strategy: Strategy,
     limits: RiskLimits,
     *,
     reference: ReferencePrice | None = None,
-    fill_expiry: timedelta = timedelta(minutes=5),
     costs: CostInputs = _ZERO_COSTS,
-) -> BacktestResult:
-    ordered = load_events(events)
+    fill_expiry: timedelta = timedelta(minutes=5),
+) -> PaperResult:
     quotes_by_market: dict[str, list[Quote]] = {}
     pending: dict[str, MakerOrder] = {}
     open_positions: dict[str, _OpenPosition] = {}
     fills: list[Fill] = []
-    deployed = Decimal(0)
-    signal_probs: list[tuple[str, float]] = []
 
-    for event in ordered:
+    async for event in feed.events():
         quotes_by_market.setdefault(event.market_id, []).append(event.quote)
         view = MarketView(event.ts, quotes_by_market, reference)
         decision = strategy.on_event(event, view)
-        if decision is not None and decision.prob is not None:
-            signal_probs.append((event.market_id, decision.prob))
 
         market = event.market_id
         quote = event.quote
 
-        # 1. resolve a resting order for this market
         if market in pending:
             order = pending[market]
             if crosses(order, quote):
@@ -86,7 +76,6 @@ def replay(
                 del pending[market]
             elif quote.ts > order.expiry_ts:
                 del pending[market]
-        # 2. otherwise close an open position on a later quote
         elif market in open_positions and quote.ts > open_positions[market].opened_ts:
             position = open_positions.pop(market)
             exit_price = token_price(position.side, quote.price)
@@ -101,9 +90,7 @@ def replay(
                     ),
                 )
             )
-            deployed += position.entry_price * position.shares
 
-        # 3. rest a new order when flat
         if (
             market not in pending
             and market not in open_positions
@@ -120,7 +107,6 @@ def replay(
                 expiry_ts=quote.ts + fill_expiry,
             )
 
-    # mark out any still-open positions at their last seen price
     for market, position in open_positions.items():
         last_price = quotes_by_market[market][-1].price
         exit_price = token_price(position.side, last_price)
@@ -135,12 +121,5 @@ def replay(
                 ),
             )
         )
-        deployed += position.entry_price * position.shares
 
-    pnl = realized_pnl(fills)
-    return BacktestResult(
-        fills=tuple(fills),
-        realized_pnl=pnl,
-        roi=roi(pnl, deployed) if deployed > 0 else 0.0,
-        signal_probs=tuple(signal_probs),
-    )
+    return PaperResult(fills=tuple(fills), realized_pnl=realized_pnl(fills))

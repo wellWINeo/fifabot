@@ -94,6 +94,31 @@ class GammaClient:
         )
         return parse_price_history(market_id, GammaPriceHistory.model_validate(raw))
 
+    async def fetch_events(self, *, limit: int = 100) -> list[GammaEvent]:
+        events: list[GammaEvent] = []
+        offset = 0
+        while True:
+            raw = await get_json(
+                self._client,
+                "/events",
+                {"limit": limit, "offset": offset},
+                limiter=self._limiter,
+                max_retries=self._max_retries,
+                retry_backoff=self._retry_backoff,
+            )
+            page = [GammaEvent.model_validate(e) for e in raw]
+            events.extend(page)
+            if len(page) < limit:
+                break
+            offset += limit
+        return events
+
+    async def fetch_event_groups(self, *, limit: int = 100) -> list[MarketGroup]:
+        groups: list[MarketGroup] = []
+        for event in await self.fetch_events(limit=limit):
+            groups.extend(parse_event_groups(event))
+        return groups
+
 
 def parse_event_groups(raw: GammaEvent) -> list[MarketGroup]:
     """Turn a Gamma event into mutually-exclusive MarketGroups.

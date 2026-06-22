@@ -1,0 +1,18 @@
+{
+  "eventId": "wc-2026-eng-fra",
+  "updatedAt": "2026-06-21T12:00:00Z",
+  "bookmakers": {
+    "Betfair Exchange": [
+      {
+        "name": "ML",
+        "odds": [{ "home": "2.10", "draw": "3.40", "away": "3.70" }]
+      }
+    ],
+    "Bet365": [
+      {
+        "name": "ML",
+        "odds": [{ "home": "2.00", "draw": "3.30", "away": "3.60" }]
+      }
+    ]
+  }
+}
