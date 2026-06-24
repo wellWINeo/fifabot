@@ -6,7 +6,7 @@ from decimal import Decimal
 import pytest
 from pydantic import ValidationError
 
-from data.events import MarketGroup, Quote, event_from_quote
+from data.events import Market, MarketGroup, Quote, event_from_quote
 
 
 def _quote() -> Quote:
@@ -54,3 +54,25 @@ def test_market_group_construction() -> None:
 def test_market_group_requires_two_legs() -> None:
     with pytest.raises(ValidationError):
         MarketGroup(group_id="g", market_ids=("only-one",))
+
+
+def test_market_has_minimum_order_size() -> None:
+    market = Market(
+        market_id="m",
+        question="q",
+        token_ids=("yes", "no"),
+        tick_size=Decimal("0.01"),
+        minimum_order_size=Decimal("5"),
+    )
+    assert market.minimum_order_size == Decimal("5")
+
+
+def test_market_rejects_nonpositive_minimum_order_size() -> None:
+    with pytest.raises(ValidationError):
+        Market(
+            market_id="m",
+            question="q",
+            token_ids=("yes", "no"),
+            tick_size=Decimal("0.01"),
+            minimum_order_size=Decimal("0"),
+        )

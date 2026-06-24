@@ -18,3 +18,16 @@ uv run pytest              # tests
 
 pre-commit install   # enable commit-time gates (ruff, mypy, gitleaks)
 ```
+
+## Phase 5 operator steps (testnet, non-gate)
+
+These touch the live network and require env credentials (`WALLET_PRIVATE_KEY`,
+`PROBE_TOKEN_ID`); they are never run in CI.
+
+1. One-off allowance approval (once per wallet):
+   `nix develop --command uv run python -m scripts.set_allowances`
+2. Amoy order probe (mechanical pre-check that a signed order settles):
+   `nix develop --command uv run python -m scripts.probe_amoy_order`
+
+A real *fill* is only validated by the Phase 6 mainnet micro-trade — Amoy
+cannot demonstrate one.

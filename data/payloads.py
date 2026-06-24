@@ -32,6 +32,7 @@ class GammaMarket(BaseModel):
     question: str
     clobTokenIds: list[str] = Field(default_factory=list)  # noqa: N815
     tickSize: Decimal = Decimal("0.01")  # noqa: N815
+    minimumOrderSize: Decimal = Decimal("1")  # noqa: N815
     active: bool = True
     closed: bool = False
 

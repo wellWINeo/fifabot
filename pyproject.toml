@@ -12,6 +12,7 @@ dependencies = [
     "websockets>=13",
     "polars>=1",
     "pydantic-ai>=1.107.0",
+    "py-clob-client>=0.34",
 ]
 
 [dependency-groups]
@@ -56,4 +57,8 @@ namespace_packages = true
 
 [[tool.mypy.overrides]]
 module = ["sklearn.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["py_clob_client.*"]
 ignore_missing_imports = true

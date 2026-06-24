@@ -22,6 +22,7 @@ def parse_market(raw: GammaMarket) -> Market:
         question=raw.question,
         token_ids=tuple(raw.clobTokenIds),
         tick_size=raw.tickSize,
+        minimum_order_size=raw.minimumOrderSize,
         active=raw.active and not raw.closed,
     )
 

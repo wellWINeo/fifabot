@@ -19,6 +19,7 @@ class Market(BaseModel):
     question: str
     token_ids: tuple[str, ...]
     tick_size: Decimal = Field(gt=0)
+    minimum_order_size: Decimal = Field(gt=0)
     active: bool = True
 
 
