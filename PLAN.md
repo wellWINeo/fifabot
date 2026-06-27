@@ -102,8 +102,14 @@ trading and blocks further orders.
 
 **Goal:** validate the live path with real money treated as instrumentation.
 
-**Deliverables:** live run with ~$20–25 at minimum order sizes, full logging and
-reconciliation.
+**Deliverables:** operator-run single micro-trade harness
+(`scripts/live_microtrade.py`) placing one real order at minimum size, polling
+it to a terminal state, with structured JSONL logging and intended-vs-actual
+reconciliation. Reconciliation, polling, and journal are reusable modules.
+
+**Deferred follow-ups:** continuous live loop (`app/live.py run_live`) with real
+fill tracking replacing the simulated `crosses()`; SELL/close path in
+`ClobExecutionClient` and round-trip reconciliation.
 
 **Gate (operational):** clean end-to-end testnet run, then one monitored
 micro-trade reconciled (expected vs. actual fill and slippage) before any further

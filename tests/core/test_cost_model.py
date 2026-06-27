@@ -6,7 +6,7 @@ import pytest
 from hypothesis import given
 from hypothesis import strategies as st
 
-from core.cost_model import round_trip_cost
+from core.cost_model import one_way_cost, round_trip_cost
 from core.models import CostInputs
 
 
@@ -136,3 +136,43 @@ def test_round_trip_cost_monotone_in_margin(
         model_error_margin=margin + bump,
     )
     assert round_trip_cost(higher, notional) >= round_trip_cost(base, notional)
+
+
+# ── one-way cost ──────────────────────────────────────────────────────────────
+
+
+def _ow_costs(
+    spread: str = "0.02",
+    fee: str = "0.01",
+    gas: str = "0.00",
+    margin: str = "0.00",
+) -> CostInputs:
+    return CostInputs(
+        spread=Decimal(spread),
+        fee_rate=Decimal(fee),
+        gas_usd=Decimal(gas),
+        model_error_margin=Decimal(margin),
+    )
+
+
+def test_one_way_cost_is_half_spread_plus_single_fee() -> None:
+    costs = _ow_costs(spread="0.02", fee="0.01", gas="0", margin="0")
+    # spread/2 + fee = 0.01 + 0.01
+    assert one_way_cost(costs, Decimal("10")) == pytest.approx(0.02)
+
+
+def test_one_way_cost_includes_amortized_gas_and_margin() -> None:
+    costs = _ow_costs(spread="0", fee="0", gas="1.00", margin="0.005")
+    # gas/notional + margin = 1/10 + 0.005
+    assert one_way_cost(costs, Decimal("10")) == pytest.approx(0.105)
+
+
+def test_one_way_cost_never_exceeds_round_trip() -> None:
+    costs = _ow_costs(spread="0.04", fee="0.02", gas="0.50", margin="0.01")
+    notional = Decimal("25")
+    assert one_way_cost(costs, notional) <= round_trip_cost(costs, notional)
+
+
+def test_one_way_cost_rejects_nonpositive_notional() -> None:
+    with pytest.raises(ValueError):
+        one_way_cost(_ow_costs(), Decimal("0"))

@@ -28,6 +28,9 @@ class OrderStatus(BaseModel):
 
     order_id: str
     state: str
+    filled_size: Decimal = Decimal(0)
+    avg_fill_price: Decimal = Decimal(0)
+    fees_paid: Decimal = Decimal(0)
 
 
 class ExecutionClient(Protocol):
@@ -44,6 +47,8 @@ class FakeExecutionClient:
     next_id: str = "ord-1"
     placed: list[OrderRequest] = field(default_factory=list)
     cancelled: list[str] = field(default_factory=list)
+    status_sequence: list[OrderStatus] = field(default_factory=list)
+    _status_idx: int = field(default=0, init=False)
 
     def allowances(self) -> Allowances:
         return Allowances(usdc=self.usdc_allowance, ctf=self.ctf_allowance)
@@ -56,6 +61,10 @@ class FakeExecutionClient:
         self.cancelled.append(order_id)
 
     def status(self, order_id: str) -> OrderStatus:
+        if self.status_sequence:
+            idx = min(self._status_idx, len(self.status_sequence) - 1)
+            self._status_idx += 1
+            return self.status_sequence[idx]
         return OrderStatus(order_id=order_id, state="open")
 
 
@@ -105,4 +114,10 @@ class ClobExecutionClient:
 
     def status(self, order_id: str) -> OrderStatus:
         resp = self._sdk.get_order(order_id)
-        return OrderStatus(order_id=order_id, state=str(resp.get("status", "unknown")))
+        return OrderStatus(
+            order_id=order_id,
+            state=str(resp.get("status", "unknown")),
+            filled_size=Decimal(str(resp.get("size_matched", "0"))),
+            avg_fill_price=Decimal(str(resp.get("price", "0"))),
+            fees_paid=Decimal(str(resp.get("fee", "0"))),
+        )
