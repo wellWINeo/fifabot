@@ -1,0 +1,36 @@
+[
+  {
+    "id": "70001", "slug": "spain-vs-england-2026-06-28", "title": "Spain vs England",
+    "negRisk": true, "enableNegRisk": true,
+    "markets": [
+      {"id": "800001", "question": "Will Spain beat England?", "groupItemTitle": "Spain", "clobTokenIds": "[\"a1\", \"a2\"]"},
+      {"id": "800002", "question": "Will Spain vs England draw?", "groupItemTitle": "Draw", "clobTokenIds": "[\"b1\", \"b2\"]"},
+      {"id": "800003", "question": "Will England beat Spain?", "groupItemTitle": "England", "clobTokenIds": "[\"c1\", \"c2\"]"}
+    ]
+  },
+  {
+    "id": "70002", "slug": "world-cup-winner", "title": "2026 World Cup Winner",
+    "negRisk": true, "enableNegRisk": true,
+    "markets": [
+      {"id": "800010", "question": "Will Spain win the World Cup?", "groupItemTitle": "Spain", "clobTokenIds": "[\"d1\", \"d2\"]"},
+      {"id": "800011", "question": "Will Brazil win the World Cup?", "groupItemTitle": "Brazil", "clobTokenIds": "[\"e1\", \"e2\"]"},
+      {"id": "800012", "question": "Will France win the World Cup?", "groupItemTitle": "France", "clobTokenIds": "[\"f1\", \"f2\"]"},
+      {"id": "800013", "question": "Will England win the World Cup?", "groupItemTitle": "England", "clobTokenIds": "[\"g1\", \"g2\"]"}
+    ]
+  },
+  {
+    "id": "70003", "slug": "world-cup-group-a-winner", "title": "World Cup Group A Winner",
+    "negRisk": true, "enableNegRisk": true,
+    "markets": [
+      {"id": "800020", "question": "Will Mexico win Group A?", "groupItemTitle": "Mexico", "clobTokenIds": "[\"h1\", \"h2\"]"},
+      {"id": "800021", "question": "Will Canada win Group A?", "groupItemTitle": "Canada", "clobTokenIds": "[\"i1\", \"i2\"]"}
+    ]
+  },
+  {
+    "id": "70004", "slug": "wc-most-corners-final", "title": "Will the World Cup final have over 10 corners?",
+    "negRisk": false, "enableNegRisk": false,
+    "markets": [
+      {"id": "800030", "question": "Over 10 corners in the final?", "groupItemTitle": "", "clobTokenIds": "[\"j1\", \"j2\"]"}
+    ]
+  }
+]

@@ -6,7 +6,14 @@ from decimal import Decimal
 import pytest
 from pydantic import ValidationError
 
-from data.events import Market, MarketGroup, Quote, event_from_quote
+from data.events import (
+    DiscoveredMarket,
+    DiscoveryManifest,
+    Market,
+    MarketGroup,
+    Quote,
+    event_from_quote,
+)
 
 
 def _quote() -> Quote:
@@ -76,3 +83,46 @@ def test_market_rejects_nonpositive_minimum_order_size() -> None:
             tick_size=Decimal("0.01"),
             minimum_order_size=Decimal("0"),
         )
+
+
+def test_discovered_market_construction() -> None:
+    dm = DiscoveredMarket(
+        market_id="558934",
+        question="Will Spain win the 2026 FIFA World Cup?",
+        token_ids=("4394", "1126"),
+        event_slug="world-cup-winner",
+        kind="outright",
+        group_id="30615",
+    )
+    assert dm.group_id == "30615"
+    assert dm.kind == "outright"
+
+
+def test_discovered_market_group_id_optional() -> None:
+    dm = DiscoveredMarket(
+        market_id="x", question="q", token_ids=("a",), event_slug="s", kind="prop"
+    )
+    assert dm.group_id is None
+
+
+def test_discovered_market_is_frozen() -> None:
+    dm = DiscoveredMarket(
+        market_id="x", question="q", token_ids=("a",), event_slug="s", kind="prop"
+    )
+    with pytest.raises(ValidationError):
+        dm.kind = "other"  # type: ignore[misc]
+
+
+def test_discovery_manifest_holds_markets_and_groups() -> None:
+    dm = DiscoveredMarket(
+        market_id="x", question="q", token_ids=("a",), event_slug="s", kind="prop"
+    )
+    manifest = DiscoveryManifest(
+        topic="fifa-2026",
+        tag="world-cup",
+        discovered_at=datetime(2026, 6, 27, 12, 0, tzinfo=UTC),
+        markets=(dm,),
+        groups=(),
+    )
+    assert manifest.markets[0].market_id == "x"
+    assert manifest.tag == "world-cup"

@@ -95,14 +95,19 @@ class GammaClient:
         )
         return parse_price_history(market_id, GammaPriceHistory.model_validate(raw))
 
-    async def fetch_events(self, *, limit: int = 100) -> list[GammaEvent]:
+    async def fetch_events(
+        self, *, limit: int = 100, params: Mapping[str, str] | None = None
+    ) -> list[GammaEvent]:
         events: list[GammaEvent] = []
         offset = 0
         while True:
+            query: dict[str, object] = {"limit": limit, "offset": offset}
+            if params:
+                query.update(params)
             raw = await get_json(
                 self._client,
                 "/events",
-                {"limit": limit, "offset": offset},
+                query,
                 limiter=self._limiter,
                 max_retries=self._max_retries,
                 retry_backoff=self._retry_backoff,

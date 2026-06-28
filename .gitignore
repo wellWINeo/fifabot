@@ -23,3 +23,6 @@ result-*
 
 # OS / editor
 .DS_Store
+
+# Runtime artifacts
+var/

@@ -61,3 +61,28 @@ class MarketGroup(BaseModel):
         if len(value) < 2:
             raise ValueError("a market group needs at least two legs")
         return value
+
+
+class DiscoveredMarket(BaseModel):
+    """One enumerated, classified market leg (output of auto-discovery)."""
+
+    model_config = ConfigDict(frozen=True)
+
+    market_id: str
+    question: str
+    token_ids: tuple[str, ...]
+    event_slug: str
+    kind: str
+    group_id: str | None = None
+
+
+class DiscoveryManifest(BaseModel):
+    """A persisted snapshot of a topic's discovered market universe."""
+
+    model_config = ConfigDict(frozen=True)
+
+    topic: str
+    tag: str
+    discovered_at: AwareDatetime
+    markets: tuple[DiscoveredMarket, ...]
+    groups: tuple[MarketGroup, ...]

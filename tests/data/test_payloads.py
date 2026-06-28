@@ -8,6 +8,7 @@ from pydantic import ValidationError
 from data.payloads import (
     ClobBook,
     ClobPriceHistory,
+    GammaEventMarket,
     GammaMarket,
     GammaPriceHistory,
 )
@@ -60,3 +61,29 @@ def test_clob_book_parses_levels() -> None:
 def test_clob_price_history_parses_decimal() -> None:
     h = ClobPriceHistory.model_validate({"history": [{"t": 1718800000, "p": "0.50"}]})
     assert h.history[0].p == Decimal("0.50")
+
+
+def test_event_market_decodes_json_string_token_ids() -> None:
+    m = GammaEventMarket.model_validate(
+        {"id": "1", "question": "q", "clobTokenIds": '["4394", "1126"]'}
+    )
+    assert m.clobTokenIds == ["4394", "1126"]
+
+
+def test_event_market_accepts_list_token_ids() -> None:
+    m = GammaEventMarket.model_validate(
+        {"id": "1", "question": "q", "clobTokenIds": ["a", "b"]}
+    )
+    assert m.clobTokenIds == ["a", "b"]
+
+
+def test_event_market_defaults_empty_token_ids() -> None:
+    m = GammaEventMarket.model_validate({"id": "1", "question": "q"})
+    assert m.clobTokenIds == []
+
+
+def test_event_market_rejects_malformed_token_ids() -> None:
+    with pytest.raises(ValidationError):
+        GammaEventMarket.model_validate(
+            {"id": "1", "question": "q", "clobTokenIds": "not-json"}
+        )

@@ -129,3 +129,27 @@ def test_fetch_event_groups_over_mock_transport() -> None:
         assert any(len(g.market_ids) >= 2 for g in groups)
 
     asyncio.run(_run())
+
+
+def test_fetch_events_sends_extra_params_across_pages() -> None:
+    async def _run() -> None:
+        all_events = json.loads((_FIX / "events_negrisk.json").read_text())
+        tags_seen: list[str] = []
+        offsets_seen: list[int] = []
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            tags_seen.append(request.url.params["tag"])
+            offset = int(request.url.params["offset"])
+            limit = int(request.url.params["limit"])
+            offsets_seen.append(offset)
+            return httpx.Response(200, json=all_events[offset : offset + limit])
+
+        async with GammaClient(
+            transport=httpx.MockTransport(handler), base_url="http://t"
+        ) as client:
+            events = await client.fetch_events(limit=2, params={"tag": "world-cup"})
+        assert offsets_seen == [0, 2]
+        assert tags_seen == ["world-cup", "world-cup"]
+        assert len(events) == 3
+
+    asyncio.run(_run())

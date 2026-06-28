@@ -6,10 +6,11 @@ These are parsed into canonical records in data/gamma.py and data/clob.py.
 
 from __future__ import annotations
 
+import json
 from datetime import datetime
 from decimal import Decimal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class GammaPricePoint(BaseModel):
@@ -72,6 +73,14 @@ class GammaEventMarket(BaseModel):
     id: str
     question: str
     groupItemTitle: str = ""  # noqa: N815
+    clobTokenIds: list[str] = Field(default_factory=list)  # noqa: N815
+
+    @field_validator("clobTokenIds", mode="before")
+    @classmethod
+    def _decode_token_ids(cls, value: object) -> object:
+        if isinstance(value, str):
+            return json.loads(value)
+        return value
 
 
 class GammaEvent(BaseModel):
