@@ -333,7 +333,9 @@ def suppress_market(state: RiskState, market_id: str, reason: str) -> RiskState:
     )
 
 
-def _recent_count(state: RiskState, market_id: str, now: datetime, window: float) -> int:
+def _recent_count(
+    state: RiskState, market_id: str, now: datetime, window: float
+) -> int:
     cutoff = now.timestamp() - window
     return sum(1 for ts in state.order_ts.get(market_id, ()) if ts.timestamp() > cutoff)
 
@@ -342,18 +344,24 @@ def pretrade_check(
     state: RiskState, config: RiskConfig, order: RiskOrder, now: datetime
 ) -> tuple[RiskState, CheckResult]:
     if state.halted:
-        return state, CheckResult(allowed=False, scope="global", reason=state.halt_reason)
+        return state, CheckResult(
+            allowed=False, scope="global", reason=state.halt_reason
+        )
     if order.market_id in state.halted_markets:
         return state, CheckResult(
             allowed=False, scope="market", reason=f"market {order.market_id} suppressed"
         )
     if state.orders_this_run >= config.max_orders_per_run:
         reason = f"order-count ceiling {config.max_orders_per_run} reached"
-        return trip(state, reason), CheckResult(allowed=False, scope="global", reason=reason)
+        return trip(state, reason), CheckResult(
+            allowed=False, scope="global", reason=reason
+        )
     recent = _recent_count(state, order.market_id, now, config.resubmit_window_seconds)
     if recent >= config.max_orders_per_market_in_window:
         reason = f"rapid resubmission on {order.market_id}"
-        return trip(state, reason), CheckResult(allowed=False, scope="global", reason=reason)
+        return trip(state, reason), CheckResult(
+            allowed=False, scope="global", reason=reason
+        )
     projected = state.exposure.get(order.market_id, Decimal(0)) + order.notional
     if projected > config.max_position_usd:
         return state, CheckResult(
@@ -364,7 +372,9 @@ def pretrade_check(
 
 def on_order_placed(state: RiskState, order: RiskOrder, now: datetime) -> RiskState:
     exposure = dict(state.exposure)
-    exposure[order.market_id] = exposure.get(order.market_id, Decimal(0)) + order.notional
+    exposure[order.market_id] = (
+        exposure.get(order.market_id, Decimal(0)) + order.notional
+    )
     order_ts = dict(state.order_ts)
     order_ts[order.market_id] = (*order_ts.get(order.market_id, ()), now)
     return state.model_copy(
@@ -475,14 +485,21 @@ def roll_day(state: RiskState, now: datetime) -> RiskState:
     if state.day == today:
         return state
     return state.model_copy(
-        update={"day": today, "day_realized_pnl": Decimal(0), "unrealized_pnl": Decimal(0)}
+        update={
+            "day": today,
+            "day_realized_pnl": Decimal(0),
+            "unrealized_pnl": Decimal(0),
+        }
     )
 
 
 def on_fill(state: RiskState, market_id: str, fill: Fill, now: datetime) -> RiskState:
     state = roll_day(state, now)
     pnl = realized_pnl([fill])
-    released = max(Decimal(0), state.exposure.get(market_id, Decimal(0)) - fill.entry_price * fill.shares)
+    released = max(
+        Decimal(0),
+        state.exposure.get(market_id, Decimal(0)) - fill.entry_price * fill.shares,
+    )
     exposure = dict(state.exposure)
     if released == Decimal(0):
         exposure.pop(market_id, None)
@@ -856,8 +873,11 @@ from execution.orders import OrderRequest
 
 def _order() -> OrderRequest:
     return OrderRequest(
-        market_id="m", token_id="yes", side=Side.BUY_YES,
-        price=Decimal("0.40"), size=Decimal("10"),
+        market_id="m",
+        token_id="yes",
+        side=Side.BUY_YES,
+        price=Decimal("0.40"),
+        size=Decimal("10"),
     )
 
 
@@ -952,7 +972,9 @@ class ClobExecutionClient:
     """
 
     def __init__(self, *, host: str, private_key: str, chain_id: int) -> None:
-        from py_clob_client.client import ClobClient as _Sdk  # lazy: keeps SDK out of tests
+        from py_clob_client.client import (
+            ClobClient as _Sdk,
+        )  # lazy: keeps SDK out of tests
 
         self._sdk = _Sdk(
             host=host, key=private_key, chain_id=chain_id, signature_type=0
@@ -965,7 +987,9 @@ class ClobExecutionClient:
         usdc = self._sdk.get_balance_allowance(
             BalanceAllowanceParams(asset_type=AssetType.COLLATERAL)
         )
-        return Allowances(usdc=Decimal(str(usdc["allowance"])), ctf=Decimal(str(usdc["allowance"])))
+        return Allowances(
+            usdc=Decimal(str(usdc["allowance"])), ctf=Decimal(str(usdc["allowance"]))
+        )
 
     def place(self, order: OrderRequest) -> str:
         from py_clob_client.clob_types import OrderArgs
@@ -1162,8 +1186,11 @@ _T0 = datetime(2026, 6, 23, 12, 0, tzinfo=UTC)
 
 def _market() -> Market:
     return Market(
-        market_id="m", question="q", token_ids=("yes", "no"),
-        tick_size=Decimal("0.01"), minimum_order_size=Decimal("5"),
+        market_id="m",
+        question="q",
+        token_ids=("yes", "no"),
+        tick_size=Decimal("0.01"),
+        minimum_order_size=Decimal("5"),
     )
 
 
@@ -1181,8 +1208,11 @@ def _config(**overrides: object) -> RiskConfig:
 
 def _order(price: str = "0.40", size: str = "10") -> OrderRequest:
     return OrderRequest(
-        market_id="m", token_id="yes", side=Side.BUY_YES,
-        price=Decimal(price), size=Decimal(size),
+        market_id="m",
+        token_id="yes",
+        side=Side.BUY_YES,
+        price=Decimal(price),
+        size=Decimal(size),
     )
 
 
@@ -1419,8 +1449,11 @@ def _risk(**overrides: object) -> RiskConfig:
 def _markets(*ids: str) -> dict[str, Market]:
     return {
         mid: Market(
-            market_id=mid, question="q", token_ids=("yes", "no"),
-            tick_size=Decimal("0.01"), minimum_order_size=Decimal("1"),
+            market_id=mid,
+            question="q",
+            token_ids=("yes", "no"),
+            tick_size=Decimal("0.01"),
+            minimum_order_size=Decimal("1"),
         )
         for mid in ids
     }
@@ -1429,10 +1462,18 @@ def _markets(*ids: str) -> dict[str, Market]:
 def test_global_halt_blocks_further_admissions() -> None:
     async def _run() -> None:
         # Two markets each get one promoted decision; ceiling=1 -> 2nd halts.
-        feed = HistoricalFeed([
-            event_from_quote(Quote(market_id="a", ts=_T0, price=Decimal("0.40"))),
-            event_from_quote(Quote(market_id="b", ts=_T0 + timedelta(minutes=1), price=Decimal("0.40"))),
-        ])
+        feed = HistoricalFeed(
+            [
+                event_from_quote(Quote(market_id="a", ts=_T0, price=Decimal("0.40"))),
+                event_from_quote(
+                    Quote(
+                        market_id="b",
+                        ts=_T0 + timedelta(minutes=1),
+                        price=Decimal("0.40"),
+                    )
+                ),
+            ]
+        )
 
         class _AlwaysBuy:
             def on_event(self, event: MarketEvent, view: MarketView) -> Decision | None:
@@ -1442,8 +1483,11 @@ def test_global_halt_blocks_further_admissions() -> None:
                 )
 
         result = await run_paper(
-            feed, _AlwaysBuy(), _limits(),
-            risk=_risk(max_orders_per_run=1), markets=_markets("a", "b"),
+            feed,
+            _AlwaysBuy(),
+            _limits(),
+            risk=_risk(max_orders_per_run=1),
+            markets=_markets("a", "b"),
         )
         assert result.halted is True
         assert "ceiling" in (result.halt_reason or "")
@@ -1648,7 +1692,9 @@ from scripts.probe_amoy_order import build_probe_orders
 
 
 def test_build_probe_orders_makes_a_buy_and_counter() -> None:
-    buy, counter = build_probe_orders(token_id="yes", price=Decimal("0.50"), size=Decimal("5"))
+    buy, counter = build_probe_orders(
+        token_id="yes", price=Decimal("0.50"), size=Decimal("5")
+    )
     assert buy.token_id == "yes" and buy.side is Side.BUY_YES
     assert buy.price == Decimal("0.50") and buy.size == Decimal("5")
     assert counter.side is Side.BUY_NO

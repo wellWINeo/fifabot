@@ -62,7 +62,9 @@ _T0 = datetime(2026, 6, 21, 12, 0, tzinfo=UTC)
 
 
 def _quote(minute: int, price: str) -> Quote:
-    return Quote(market_id="m", ts=_T0 + timedelta(minutes=minute), price=Decimal(price))
+    return Quote(
+        market_id="m", ts=_T0 + timedelta(minutes=minute), price=Decimal(price)
+    )
 
 
 def _order(side: Side, limit: str, expiry_min: int = 10) -> MakerOrder:
@@ -84,9 +86,10 @@ def test_buy_yes_fills_when_price_drops_to_limit() -> None:
     order = _order(Side.BUY_YES, "0.40")
     # later quote at 0.40 trades through our resting bid
     assert crosses(order, _quote(2, "0.40")) is True
-    assert simulate_maker_fill(order, [_quote(1, "0.45"), _quote(2, "0.40")]) == _quote(
-        2, "0.40"
-    ).ts
+    assert (
+        simulate_maker_fill(order, [_quote(1, "0.45"), _quote(2, "0.40")])
+        == _quote(2, "0.40").ts
+    )
 
 
 def test_buy_yes_does_not_fill_when_price_rises() -> None:
@@ -682,9 +685,7 @@ def test_run_paper_matches_engine_on_historical_feed() -> None:
 def test_run_paper_no_orders_when_strategy_abstains() -> None:
     async def _run() -> None:
         class _NeverActs:
-            def on_event(
-                self, event: MarketEvent, view: MarketView
-            ) -> Decision | None:
+            def on_event(self, event: MarketEvent, view: MarketView) -> Decision | None:
                 return None
 
         feed = HistoricalFeed([_event(1, "0.40"), _event(2, "0.55")])
@@ -1077,13 +1078,16 @@ class OddsApiClient:
     async def __aexit__(self, *exc: object) -> None:
         await self._client.aclose()
 
-    async def fetch_odds(
-        self, event_id: str, bookmakers: Sequence[str]
-    ) -> OddsApiOdds:
+    async def fetch_odds(self, event_id: str, bookmakers: Sequence[str]) -> OddsApiOdds:
         raw = await get_json(
             self._client,
             "/odds",
-            {"apiKey": self._key, "eventId": event_id, "bookmakers": ",".join(bookmakers), "market": "ML"},
+            {
+                "apiKey": self._key,
+                "eventId": event_id,
+                "bookmakers": ",".join(bookmakers),
+                "market": "ML",
+            },
             limiter=self._limiter,
         )
         return OddsApiOdds.model_validate(raw)
@@ -1190,30 +1194,31 @@ Expected: FAIL (`GammaClient` has no `fetch_event_groups`).
 Inspect `data/payloads.py` for `GammaEvent` and the `/events` envelope shape, then add to `GammaClient` in `data/gamma.py`:
 
 ```python
-    async def fetch_events(self, *, limit: int = 100) -> list[GammaEvent]:
-        events: list[GammaEvent] = []
-        offset = 0
-        while True:
-            raw = await get_json(
-                self._client,
-                "/events",
-                {"limit": limit, "offset": offset},
-                limiter=self._limiter,
-                max_retries=self._max_retries,
-                retry_backoff=self._retry_backoff,
-            )
-            page = [GammaEvent.model_validate(e) for e in raw]
-            events.extend(page)
-            if len(page) < limit:
-                break
-            offset += limit
-        return events
+async def fetch_events(self, *, limit: int = 100) -> list[GammaEvent]:
+    events: list[GammaEvent] = []
+    offset = 0
+    while True:
+        raw = await get_json(
+            self._client,
+            "/events",
+            {"limit": limit, "offset": offset},
+            limiter=self._limiter,
+            max_retries=self._max_retries,
+            retry_backoff=self._retry_backoff,
+        )
+        page = [GammaEvent.model_validate(e) for e in raw]
+        events.extend(page)
+        if len(page) < limit:
+            break
+        offset += limit
+    return events
 
-    async def fetch_event_groups(self, *, limit: int = 100) -> list[MarketGroup]:
-        groups: list[MarketGroup] = []
-        for event in await self.fetch_events(limit=limit):
-            groups.extend(parse_event_groups(event))
-        return groups
+
+async def fetch_event_groups(self, *, limit: int = 100) -> list[MarketGroup]:
+    groups: list[MarketGroup] = []
+    for event in await self.fetch_events(limit=limit):
+        groups.extend(parse_event_groups(event))
+    return groups
 ```
 
 > Add `from data.payloads import GammaEvent` to the imports if not already present (Phase 3 added `parse_event_groups`, so `GammaEvent` is likely imported). If the `/events` response is enveloped, unwrap it the same way `fetch_markets` handles `/markets`.
@@ -1272,7 +1277,11 @@ async def _record(event_id: str, out: Path, bookmaker: str) -> int:
     rows = json.loads(out.read_text()) if out.exists() else []
     for market_id, outcome in MARKET_TO_OUTCOME.items():
         rows.append(
-            {"market_id": market_id, "ts": ts, "fair": str(Decimal(str(ref.fair[outcome])))}
+            {
+                "market_id": market_id,
+                "ts": ts,
+                "fair": str(Decimal(str(ref.fair[outcome]))),
+            }
         )
     out.write_text(json.dumps(rows, indent=2))
     print(f"recorded {len(MARKET_TO_OUTCOME)} snapshot(s) at {ts}")
@@ -1412,7 +1421,10 @@ def test_agreement_flag_set_when_two_signals_share_side() -> None:
 
 def test_all_abstain_returns_none() -> None:
     composite = CompositeStrategy(
-        [NamedSignal("S2", _Fixed(_abstain()), promoted=True), NamedSignal("S1", _Fixed(None), promoted=True)]
+        [
+            NamedSignal("S2", _Fixed(_abstain()), promoted=True),
+            NamedSignal("S1", _Fixed(None), promoted=True),
+        ]
     )
     assert composite.on_event(_event(), _view()) is None
 ```
@@ -1556,7 +1568,14 @@ from decimal import Decimal
 from backtest.calibrated import fit_split_calibrator, run_walk_forward
 from backtest.view import MarketView
 from backtest.walkforward import Split
-from core.models import CalibrationSample, Decision, GateResult, RiskLimits, Side, SizingResult
+from core.models import (
+    CalibrationSample,
+    Decision,
+    GateResult,
+    RiskLimits,
+    Side,
+    SizingResult,
+)
 from data.events import MarketEvent, Quote, event_from_quote
 
 _T0 = datetime(2026, 6, 21, 12, 0, tzinfo=UTC)
@@ -1574,7 +1593,9 @@ def _limits() -> RiskLimits:
 def _events(probs: Sequence[float]) -> list[MarketEvent]:
     return [
         event_from_quote(
-            Quote(market_id=f"m{i}", ts=_T0 + timedelta(minutes=i), price=Decimal("0.50"))
+            Quote(
+                market_id=f"m{i}", ts=_T0 + timedelta(minutes=i), price=Decimal("0.50")
+            )
         )
         for i, _ in enumerate(probs)
     ]
@@ -1944,7 +1965,9 @@ def _strategy(runner) -> ShadowForecastStrategy:
 def test_shadow_emits_decision_from_hypothesis() -> None:
     quote = Quote(market_id="m", ts=_T0, price=Decimal("0.50"))
     view = MarketView(_T0, {"m": [quote]}, None)
-    strat = _strategy(lambda f: HypothesisOutput(p_fair=0.70, confidence=0.6, rationale="x"))
+    strat = _strategy(
+        lambda f: HypothesisOutput(p_fair=0.70, confidence=0.6, rationale="x")
+    )
     decision = strat.on_event(event_from_quote(quote), view)
     assert decision is not None
     assert decision.gate.action == "act"  # 0.70 vs 0.50 clears the hurdle
@@ -2208,7 +2231,9 @@ def _limits() -> RiskLimits:
 
 
 def _quote(minute: int, price: str) -> Quote:
-    return Quote(market_id="m", ts=_T0 + timedelta(minutes=minute), price=Decimal(price))
+    return Quote(
+        market_id="m", ts=_T0 + timedelta(minutes=minute), price=Decimal(price)
+    )
 
 
 def _composite(log: list[SignalDecision]) -> CompositeStrategy:
@@ -2224,9 +2249,7 @@ def _composite(log: list[SignalDecision]) -> CompositeStrategy:
 def test_lag_event_produces_act_and_fills() -> None:
     async def _run() -> None:
         # Reference fair = 0.70 throughout; Polymarket lags at 0.50 then drifts up.
-        ref = ReplayReference(
-            [Quote(market_id="m", ts=_T0, price=Decimal("0.70"))]
-        )
+        ref = ReplayReference([Quote(market_id="m", ts=_T0, price=Decimal("0.70"))])
         events = [_quote(1, "0.50"), _quote(2, "0.49"), _quote(3, "0.68")]
         log: list[SignalDecision] = []
         feed = HistoricalFeed([event_from_quote(q) for q in events])

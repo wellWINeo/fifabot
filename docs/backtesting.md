@@ -86,20 +86,41 @@ events = frame_to_events(pl.read_parquet("data/history/<window>.parquet"))
 splits = walk_forward_splits(len(events), train_size=..., test_size=...)
 log: list[SignalDecision] = []
 
+
 def make_strategy(cal: Calibrator) -> Strategy:
     return CompositeStrategy(
         [
-            NamedSignal("S1", DivergenceStrategy(costs=COSTS, notional_hint=NOTIONAL,
-                                                 calibrator=cal, limits=LIMITS), True),
-            NamedSignal("S2", ConsistencyStrategy(groups=GROUPS, costs=COSTS,
-                                                  notional_hint=NOTIONAL,
-                                                  calibrator=cal, limits=LIMITS), True),
+            NamedSignal(
+                "S1",
+                DivergenceStrategy(
+                    costs=COSTS, notional_hint=NOTIONAL, calibrator=cal, limits=LIMITS
+                ),
+                True,
+            ),
+            NamedSignal(
+                "S2",
+                ConsistencyStrategy(
+                    groups=GROUPS,
+                    costs=COSTS,
+                    notional_hint=NOTIONAL,
+                    calibrator=cal,
+                    limits=LIMITS,
+                ),
+                True,
+            ),
         ],
         log=log,
     )
 
-results = run_walk_forward(events, splits, make_strategy, outcomes,
-                           make_calibrator=PlattCalibrator, limits=LIMITS)
+
+results = run_walk_forward(
+    events,
+    splits,
+    make_strategy,
+    outcomes,
+    make_calibrator=PlattCalibrator,
+    limits=LIMITS,
+)
 print(aggregate(results))
 print(per_signal_scores(log, outcomes))
 ```

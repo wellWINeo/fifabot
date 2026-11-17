@@ -89,7 +89,7 @@ from data.payloads import GammaEventMarket
 
 def test_event_market_decodes_json_string_token_ids() -> None:
     m = GammaEventMarket.model_validate(
-        {"id": "1", "question": "q", "clobTokenIds": "[\"4394\", \"1126\"]"}
+        {"id": "1", "question": "q", "clobTokenIds": '["4394", "1126"]'}
     )
     assert m.clobTokenIds == ["4394", "1126"]
 
@@ -696,9 +696,7 @@ def test_write_then_load_latest_roundtrips(tmp_path: Path) -> None:
     write_manifest(late, tmp_path)
     loaded = load_latest_manifest(tmp_path)
     assert loaded.discovered_at == late.discovered_at
-    assert [m.market_id for m in loaded.markets] == [
-        m.market_id for m in late.markets
-    ]
+    assert [m.market_id for m in loaded.markets] == [m.market_id for m in late.markets]
 
 
 def test_write_manifest_is_append_only(tmp_path: Path) -> None:
@@ -827,9 +825,7 @@ def test_discover_raises_on_empty_result(tmp_path: Path) -> None:
             transport=httpx.MockTransport(handler), base_url="http://t"
         ) as client:
             with pytest.raises(DiscoveryError):
-                await discover_fifa_markets(
-                    client, tag="bogus-tag", directory=tmp_path
-                )
+                await discover_fifa_markets(client, tag="bogus-tag", directory=tmp_path)
 
     asyncio.run(_run())
 

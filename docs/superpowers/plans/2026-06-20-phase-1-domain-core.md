@@ -588,9 +588,7 @@ def decide(candidate: TradeCandidate, q: float, hurdle: float) -> GateResult:
     """
     edge = q - float(candidate.price)
     if abs(edge) < hurdle:
-        return GateResult.abstain(
-            reason=f"edge {edge:.4f} below hurdle {hurdle:.4f}"
-        )
+        return GateResult.abstain(reason=f"edge {edge:.4f} below hurdle {hurdle:.4f}")
     side = Side.BUY_YES if edge > 0 else Side.BUY_NO
     return GateResult.act(side=side, edge=edge)
 ```
