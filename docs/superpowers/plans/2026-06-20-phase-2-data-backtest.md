@@ -208,9 +208,7 @@ def test_clob_book_parses_levels() -> None:
 
 
 def test_clob_price_history_parses_decimal() -> None:
-    h = ClobPriceHistory.model_validate(
-        {"history": [{"t": 1718800000, "p": "0.50"}]}
-    )
+    h = ClobPriceHistory.model_validate({"history": [{"t": 1718800000, "p": "0.50"}]})
     assert h.history[0].p == Decimal("0.50")
 ```
 
@@ -389,8 +387,16 @@ from data.history import frame_to_events, quotes_to_frame
 
 def _quotes() -> list[Quote]:
     return [
-        Quote(market_id="m1", ts=datetime(2024, 6, 1, 0, 2, tzinfo=UTC), price=Decimal("0.47")),
-        Quote(market_id="m1", ts=datetime(2024, 6, 1, 0, 1, tzinfo=UTC), price=Decimal("0.45")),
+        Quote(
+            market_id="m1",
+            ts=datetime(2024, 6, 1, 0, 2, tzinfo=UTC),
+            price=Decimal("0.47"),
+        ),
+        Quote(
+            market_id="m1",
+            ts=datetime(2024, 6, 1, 0, 1, tzinfo=UTC),
+            price=Decimal("0.45"),
+        ),
     ]
 
 
@@ -570,7 +576,9 @@ def test_get_json_retries_transient_then_succeeds() -> None:
             return httpx.Response(200, json={"ok": True})
 
         transport = httpx.MockTransport(handler)
-        async with httpx.AsyncClient(base_url="http://t", transport=transport) as client:
+        async with httpx.AsyncClient(
+            base_url="http://t", transport=transport
+        ) as client:
             data = await get_json(
                 client, "/x", limiter=RateLimiter(2), retry_backoff=0.0
             )
@@ -589,7 +597,9 @@ def test_get_json_does_not_retry_4xx() -> None:
             return httpx.Response(404)
 
         transport = httpx.MockTransport(handler)
-        async with httpx.AsyncClient(base_url="http://t", transport=transport) as client:
+        async with httpx.AsyncClient(
+            base_url="http://t", transport=transport
+        ) as client:
             with pytest.raises(httpx.HTTPStatusError):
                 await get_json(client, "/x", limiter=RateLimiter(2), retry_backoff=0.0)
         assert calls["n"] == 1
@@ -767,7 +777,11 @@ def test_parse_price_history_builds_quotes() -> None:
         json.loads((_FIX / "prices_history.json").read_text())
     )
     quotes = parse_price_history("m0", raw)
-    assert [q.price for q in quotes] == [Decimal("0.45"), Decimal("0.47"), Decimal("0.52")]
+    assert [q.price for q in quotes] == [
+        Decimal("0.45"),
+        Decimal("0.47"),
+        Decimal("0.52"),
+    ]
     assert quotes[0].ts == datetime.fromtimestamp(1718800000, tz=UTC)
     assert all(isinstance(q, Quote) for q in quotes)
 
@@ -1241,7 +1255,9 @@ class ClobWsClient:
 
     async def stream(self, market_ids: Sequence[str]) -> AsyncIterator[Quote]:
         async with self._connect(self._url) as ws:
-            await ws.send(json.dumps({"type": "subscribe", "markets": list(market_ids)}))
+            await ws.send(
+                json.dumps({"type": "subscribe", "markets": list(market_ids)})
+            )
             async for raw in ws:
                 quote = parse_ws_message(json.loads(raw))
                 if quote is not None:
@@ -1964,7 +1980,9 @@ def test_rejects_nonpositive_sizes() -> None:
     train_size=st.integers(min_value=1, max_value=50),
     test_size=st.integers(min_value=1, max_value=50),
 )
-def test_splits_are_ordered_and_leak_free(n: int, train_size: int, test_size: int) -> None:
+def test_splits_are_ordered_and_leak_free(
+    n: int, train_size: int, test_size: int
+) -> None:
     splits = walk_forward_splits(n, train_size=train_size, test_size=test_size)
     for s in splits:
         # test starts exactly where train ends: no overlap, no gap, no leakage.
@@ -2026,7 +2044,9 @@ def walk_forward_splits(
         if test_end > n:
             break
         train_start = 0 if expanding else start
-        splits.append(Split(train=range(train_start, train_end), test=range(train_end, test_end)))
+        splits.append(
+            Split(train=range(train_start, train_end), test=range(train_end, test_end))
+        )
         start += advance
     return splits
 ```
@@ -2186,12 +2206,16 @@ FIX = Path(__file__).parent.parent / "tests" / "fixtures"
 
 async def main() -> None:
     async with httpx.AsyncClient(timeout=30) as client:
-        markets = (await client.get(f"{GAMMA_BASE_URL}/markets", params={"limit": 3})).json()
+        markets = (
+            await client.get(f"{GAMMA_BASE_URL}/markets", params={"limit": 3})
+        ).json()
         (FIX / "gamma" / "markets.json").write_text(json.dumps(markets, indent=2))
 
         if markets:
             token_id = markets[0]["clobTokenIds"][0]
-            book = (await client.get(f"{CLOB_BASE_URL}/book", params={"token_id": token_id})).json()
+            book = (
+                await client.get(f"{CLOB_BASE_URL}/book", params={"token_id": token_id})
+            ).json()
             (FIX / "clob" / "book.json").write_text(json.dumps(book, indent=2))
 
     print("Recorded fixtures. Review and sanitize before committing.")
